@@ -1,0 +1,100 @@
+Challenge description
+Your challenge is to complete a Haskell program to solve a simple puzzle using propositional modelling.
+
+The 
+The Wires puzzle
+The puzzle is called Wires. It starts with an  
+n
+  by  
+n
+  grid of wire tiles: square tiles with wires pointing in zero, one, or two directions. To solve the puzzle, we need to rotate, or orient, the tiles so that every wire connects with a wire from an adjacent tile (and no wires point towards the edges of the grid). The puzzle always has a solution.
+
+You must do the following:
+
+Familarise yourself with the puzzle by playing this online version.
+Design an encoding of puzzle instances using propositional logic.
+Write Haskell code to translate a puzzle instance into a propositional formula, and to translate a satisfying assignment into a puzzle solution (we provide a SAT solver to efficiently solve the formula, so you only need to worry about the translation).
+The details are quite extensive. You may like to watch this summary video before reading them in detail.
+
+Video description of challenge 3, 33MB, download.
+Submission instructions
+Your submission will be an implementation in Main.hs of the solvePuzzle function:
+
+solvePuzzle :: [[(TileNumber, WireLayout)]] -> [[Orientation]]
+
+This function will take as input a 2D list describing a solvable Wires puzzle instance. Each wire tile is described by a unique integer and by its wire layout, which is one of the following four layouts, named based on the number and configuration of wires:
+
+The four possible wire layouts
+The four possible wire layouts
+The function will output a 2D list of the corresponding tile orientations. There are eleven possible tile orientations, named with combinations of the letters U (for Up), R (for Right), D (for Down), and L (for Left):
+
+The eleven tile orientations
+The eleven tile orientations
+These types are all defined in WirePuzzle.hs. Please see that file for more information.
+
+More details.
+We provide some additional helper functions as follows:
+
+Exp.hs exports a GExp type representing propositional logic formulas (like Exp from Assessed Worksheets 1 and 2). A GExp is an Exp allowing variables names of arbitrary types. We recommend using the Exp type synonym defined atop Main.hs, with tuples for variable names. Exp.hs contains some other code which you need not read.
+
+Util.hs exports some utility functions for working with 2D lists, which you may find useful. See this file for more information.
+
+Hidden.hs, a hidden module, exports three functions which you may find useful:
+
+solveExp :: GExp a -> (a -> Bool) finds satisfying assignments for arbitrary propositional formulas. It takes a formula GExp a, converts it to CNF using the Tseytin transform (as per Assessed Worksheet 2, but we provide a complete implementation here), passes it to a SAT solver, and returns a function asg :: a -> Bool representing a satisfying assignment. asg takes a variable name and returns True or False based on the assignment found by the SAT solver.
+
+drawPuzzle :: [[Orientation]] -> IO () takes an orientation grid and prints a picture it to the terminal. It's useful for visualising your puzzle solver's output.
+
+verifyPuzzle :: [[(TileNumber, WireLayout)]] -> [[Orientation]] -> Bool takes a puzzle and a solution and checks to see if the solution correctly solves the puzzle. It's the same function our tests use, and it may be useful for your own testing.
+
+Here are some examples of using these functions:
+
+> let exp = (NOT (VAR 1)) `AND` ((VAR 1) `XOR` (VAR 2))
+> let asg = solveExp exp
+> asg 1
+False
+> asg 2
+True
+> drawPuzzle [ [ D,  None, D  ]
+             , [ UD, R,    UL ]
+             , [ UR, RL,   L  ]
+             ]
+ ┌───┬───┬───┐
+ │ O │ O │ O │
+ ├─╂─┼───┼─╂─┤
+ │ O │ O━┿━O │
+ ├─╂─┼───┼───┤
+ │ O━┿━O━┿━O │
+ └───┴───┴───┘
+> let puzzle = [ [ (0,OneWire),        (1,NoWires) ]
+               , [ (2,TwoCornerWires), (3,OneWire) ]
+               ]
+> let solution = [ [ D,  None ]
+                 , [ UR, L    ]
+                 ]
+> verifyPuzzle puzzle solution
+True
+Note:
+Does the above output of drawPuzzle look weird? It may be an issue with your browser's font. You can try copying the output and pasting it into a native text editor with a different font, to see the intended picture.
+
+Hints:
+This is a tough challenge. It is designed to push both your logic skills and your Haskell skills. You may not be able to complete it.
+
+Here's some advice for how to approach the modelling part of the challenge:
+
+Start by deciding what propositional variables you will use to describe the orientation of the tiles. We suggest allocating multiple variables per tile. You may require multiple variables per tile. There are several possible approaches. For example, you could use a single variable to signify whether a tile is in each of its available orientations.
+With these variables, try to write formulas capturing the rules of the puzzle. For example, for each pair of adjacent tiles, the tiles must either both point towards eachother, or both not point towards eachother. What about for tiles near an edge of the grid?
+Depending on your choice of propositional variables, you may also need to model some additional constraints. For example, each tile must have exactly one orientation, and its wire layout must not be changed.
+Here's some advice for how to approach the Haskell coding part of the challenge:
+
+Break the problem down into three high-level steps: encoding the puzzle instance into a formula, solving the formula, and decoding the solution to the formula into a solution to the puzzle. The default implementation of solvePuzzle does this. You can then focus on implementing the encoding and decoding steps, with two separate, independently testable helper functions; encode and decode.
+The helper function encode :: Int -> [[(TileNumber, WireLayout)]] -> Exp should focus on translating a puzzle instance into a formula. Think carefully about the different types of constraints involved (see the modelling advice above) and make use of the helper functions from Util.hs, especially hPairs and vPairs.
+The provided VarName type suggests using a (TileNumber, Int) pair for each variable name. The idea is that you can use the tile number to indicate which tile the variable refers to, and you can use the second integer to identify multiple variables for that tile. For example, if you need to use four variables for tile number 8, they could be VAR (8, 0), VAR (8, 1), VAR (8, 2), and VAR (8, 3).
+The helper function decode :: [[(TileNumber, WireLayout)]] -> (VarName -> Bool) -> [[Orientation]] should focus on translating an assignment (a function of type VarName -> Bool) into an orientation grid. We provide an example breakdown in terms of a simpler function decodeTile which focuses on decoding the orientation of a single tile.
+Here's some advice about testing and debugging your solution:
+
+Remember to break down the task ahead of you into simple, testable helper functions.
+You can find test puzzle instances on the Wires web implementation. After generating a puzzle, you can copy its corresponding [[(TileNumber, WireLayout)]] data by clicking the source code below the puzzle.
+You can visualise formulas by printing them to the terminal—Exp.hs adds code to render the formulas with more readable syntax than in the assessed worksheets.
+You can visualise orientation grids using the drawPuzzle function, described above, or by pasting the orientation grid's code on the Wires web implementation. Just click the text under the puzzle generation buttons and paste your orientation grid to set the puzzle orientation.
+The verifyPuzzle function, also described above, will also be useful for your testing. You may want to write a small helper function within Main.hs that will run your solvePuzzle function on multiple test cases which you have designed.
